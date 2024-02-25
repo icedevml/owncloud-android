@@ -21,4 +21,11 @@
         app:iconSpaceReserved="false"
         app:key="show_hidden_files"
         app:title="@string/prefs_show_hidden_files" />
+
+    <Preference
+        app:allowDividerAbove="true"
+        app:icon="@drawable/ic_lock"
+        app:iconSpaceReserved="false"
+        app:key="select_client_cert"
+        app:title="@string/prefs_select_client_cert" />
 </PreferenceScreen>

@@ -25,6 +25,8 @@
 package com.owncloud.android.lib.common.http.methods
 
 import com.owncloud.android.lib.common.http.HttpClient
+import com.owncloud.android.lib.common.network.AdvancedX509TrustManager
+import com.owncloud.android.lib.common.network.NetworkUtils
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -70,6 +72,7 @@ abstract class HttpBaseMethod constructor(url: URL) {
             connectionTimeoutUnit?.let { unit ->
                connectionTimeoutVal?.let { connectTimeout(it, unit) }
             }
+            // sslSocketFactory(httpClient.createSSLContext().socketFactory, httpClient.trustManager)
         }.build()
 
         return onExecute(okHttpClient)

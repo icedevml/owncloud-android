@@ -21,6 +21,7 @@ package com.owncloud.android.presentation.settings.advanced
 
 import androidx.lifecycle.ViewModel
 import com.owncloud.android.data.providers.SharedPreferencesProvider
+import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SELECT_CLIENT_CERT
 import com.owncloud.android.presentation.settings.advanced.SettingsAdvancedFragment.Companion.PREF_SHOW_HIDDEN_FILES
 
 class SettingsAdvancedViewModel(
@@ -33,5 +34,17 @@ class SettingsAdvancedViewModel(
 
     fun setShowHiddenFiles(hide: Boolean) {
         preferencesProvider.putBoolean(PREF_SHOW_HIDDEN_FILES, hide)
+    }
+
+    fun getSelectedClientCert(): String {
+        return preferencesProvider.getString(PREF_SELECT_CLIENT_CERT, "")!!
+    }
+
+    fun setSelectedClientCert(clientCertAlias: String?) {
+        if (clientCertAlias == null) {
+            preferencesProvider.putString(PREF_SELECT_CLIENT_CERT, "")
+        } else {
+            preferencesProvider.putString(PREF_SELECT_CLIENT_CERT, clientCertAlias)
+        }
     }
 }

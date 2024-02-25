@@ -25,6 +25,10 @@
 package com.owncloud.android.lib.common.http;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.security.KeyChain;
+
+import androidx.preference.PreferenceManager;
 
 import com.owncloud.android.lib.common.http.logging.LogInterceptor;
 import com.owncloud.android.lib.common.network.AdvancedX509TrustManager;
@@ -37,6 +41,8 @@ import okhttp3.Protocol;
 import okhttp3.TlsVersion;
 import timber.log.Timber;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
@@ -46,6 +52,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static androidx.preference.PreferenceManager.getDefaultSharedPreferences;
 
 /**
  * Client used to perform network operations
@@ -68,9 +76,48 @@ public class HttpClient {
         mContext = context;
     }
 
+    public X509TrustManager getTrustManager() {
+        try {
+            return new AdvancedX509TrustManager(NetworkUtils.getKnownServersStore(mContext));
+        } catch (NoSuchAlgorithmException nsae) {
+            Timber.e(nsae, "Could not setup SSL system.");
+            throw new RuntimeException("Could not setup okHttp client.", nsae);
+        } catch (Exception e) {
+            Timber.e(e, "Could not setup okHttp client.");
+            throw new RuntimeException("Could not setup okHttp client.", e);
+        }
+    }
+
+    public SSLContext createSSLContext() {
+        SharedPreferences prefManager = getDefaultSharedPreferences(mContext.getApplicationContext());
+        String clientCert = prefManager.getString("select_client_cert", "");
+
+        Timber.e("[MQ] Client cert selected: %s", clientCert);
+        KeyManager[] km = null;
+
+        if (!clientCert.isEmpty()) {
+            Timber.e("[MQ] Creating key manager");
+            km = new KeyManager[]{X509Impl.Companion.fromAlias(mContext.getApplicationContext(), clientCert)};
+        }
+
+        try {
+            final X509TrustManager trustManager = getTrustManager();
+            final SSLContext sslContext = buildSSLContext();
+            sslContext.init(km, new TrustManager[]{trustManager}, null);
+            return sslContext;
+        } catch (NoSuchAlgorithmException nsae) {
+            Timber.e(nsae, "Could not setup SSL system.");
+            throw new RuntimeException("Could not setup okHttp client.", nsae);
+        } catch (Exception e) {
+            Timber.e(e, "Could not setup okHttp client.");
+            throw new RuntimeException("Could not setup okHttp client.", e);
+        }
+    }
+
     public OkHttpClient getOkHttpClient() {
         if (mOkHttpClient == null) {
             try {
+                // final SSLContext sslContext = createSSLContext();
                 final X509TrustManager trustManager = new AdvancedX509TrustManager(
                         NetworkUtils.getKnownServersStore(mContext));
 
@@ -80,6 +127,7 @@ public class HttpClient {
 
                 // Automatic cookie handling, NOT PERSISTENT
                 final CookieJar cookieJar = new CookieJarImpl(mCookieStore);
+                // mOkHttpClient = buildNewOkHttpClient(sslContext.getSocketFactory(), trustManager, cookieJar);
                 mOkHttpClient = buildNewOkHttpClient(sslSocketFactory, trustManager, cookieJar);
 
             } catch (NoSuchAlgorithmException nsae) {

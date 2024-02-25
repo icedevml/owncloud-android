@@ -19,7 +19,9 @@
 
 package com.owncloud.android.presentation.settings.advanced
 
+import android.app.Activity
 import android.os.Bundle
+import android.security.KeyChain
 import android.view.View
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -33,11 +35,13 @@ class SettingsAdvancedFragment : PreferenceFragmentCompat() {
     private val advancedViewModel by viewModel<SettingsAdvancedViewModel>()
 
     private var prefShowHiddenFiles: SwitchPreferenceCompat? = null
+    private var prefSelectClientCert: Preference? = null
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_advanced, rootKey)
 
         prefShowHiddenFiles = findPreference(PREF_SHOW_HIDDEN_FILES)
+        prefSelectClientCert = findPreference(PREF_SELECT_CLIENT_CERT)
 
         initPreferenceListeners()
     }
@@ -53,9 +57,26 @@ class SettingsAdvancedFragment : PreferenceFragmentCompat() {
             advancedViewModel.setShowHiddenFiles(newValue as Boolean)
             true
         }
+
+        prefSelectClientCert?.apply {
+            summary = advancedViewModel.getSelectedClientCert() ?: context.resources.getString(R.string.prefs_select_client_cert_not_selected)
+
+            setOnPreferenceClickListener {
+                KeyChain.choosePrivateKeyAlias(
+                    context as Activity,
+                    { s -> run {
+                        advancedViewModel.setSelectedClientCert(s);
+                        summary = s ?: context.resources.getString(R.string.prefs_select_client_cert_not_selected)
+                    }}, null, null, null, -1, null
+                )
+
+                true
+            }
+        }
     }
 
     companion object {
         const val PREF_SHOW_HIDDEN_FILES = "show_hidden_files"
+        const val PREF_SELECT_CLIENT_CERT = "select_client_cert"
     }
 }
